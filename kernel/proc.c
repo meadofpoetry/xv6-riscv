@@ -164,6 +164,7 @@ freeproc(struct proc *p)
   p->killed = 0;
   p->xstate = 0;
   p->state = UNUSED;
+  p->trace_mask = 0;
 }
 
 // Create a user page table for a given process,
@@ -244,6 +245,8 @@ userinit(void)
 
   p->state = RUNNABLE;
 
+  p->trace_mask = 0;
+
   release(&p->lock);
 }
 
@@ -304,6 +307,9 @@ fork(void)
   safestrcpy(np->name, p->name, sizeof(p->name));
 
   pid = np->pid;
+
+  // child inherits parent's trace_mask
+  np->trace_mask = p->trace_mask;
 
   release(&np->lock);
 
@@ -653,4 +659,17 @@ procdump(void)
     printf("%d %s %s", p->pid, state, p->name);
     printf("\n");
   }
+}
+
+// Return the number of processes currently running.
+uint64
+procnum(void)
+{
+  uint64 num = 0;
+  struct proc *p;
+  for (p = proc; p < &proc[NPROC]; p++) {
+    if(p->state != UNUSED)
+      num++;
+  }
+  return num;
 }
